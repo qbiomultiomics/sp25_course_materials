@@ -2,7 +2,7 @@
 title: "SummarizedExperiment Tutorial"
 author: Wade Boohar, Kayla Xu
 date: 09/24/23
-updated: 10/17/24
+updated: 02/26/24
 ---
 
 ```{r setup}
@@ -111,7 +111,7 @@ Use the as.data.frame() function to change this from an S4 object to a data fram
 
 ```
 
-Three columns in rna_clinical contain nested lists. To save the dataframe as a csv later, we need to first remove those columns. Using boolean masks, subset out treatments, primary_site, and disease_type
+Four columns in rna_clinical contain nested lists. To save the dataframe as a csv later, we need to first remove those columns. Using boolean masks, subset out treatments, primary_site, disease_type, and sites_of_involvement
 
 ```{r Exercise 2.5}
 
@@ -278,19 +278,19 @@ Loading data from TCGA can be time consuming. It's much faster to access csv fil
 Save rna_clinical to your local machine
 
 ```{r Exercise 6.1}
-write.csv(rna_clinical, "../brca_rna_clinical_data.csv", row.names = TRUE)
+write.csv(rna_clinical, "brca_rna_clinical_data.csv", row.names = TRUE)
 ```
 
 
 Save rna_genes to your local machine.
 
 ```{r Exercise 6.2}
-write.csv(rna_genes, "../brca_rna_gene_data.csv", row.names = FALSE)
+write.csv(rna_genes, "brca_rna_gene_data.csv", row.names = FALSE)
 ```
 
 
 Save rna_counts to your local machine (warning: this will likely take a while!)
 
 ```{r Exercise 6.3}
-write.csv(rna_counts, "../brca_rna_count_data.csv", row.names = TRUE)
+write.csv(rna_counts, "brca_rna_count_data.csv", row.names = TRUE)
 ```
