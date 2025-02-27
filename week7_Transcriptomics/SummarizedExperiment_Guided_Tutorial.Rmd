@@ -205,7 +205,14 @@ Let's move on to rna_genes. Call rownames() and colnames() on rna_genes.
 
 ```
 
-As you can see, both the row names and column names are informative.
+Oh no! These row names don't look very informative. We know that the rows in rna_genes symbolize genes, so what should we change rownames() to? Which is better, gene_name or gene_id?
+
+```{r Exercise 5.6}
+
+
+
+```
+
 ----
 
 Now that rna_genes has informative row/column names, let's move on to rna_counts. Call rownames() and colnames() on rna_counts.
@@ -216,7 +223,7 @@ Now that rna_genes has informative row/column names, let's move on to rna_counts
 
 ```
 
-Uh oh! Looks like neither the row nor column names are very informative. Given what we did to the other data frames, add column and row names to rna_counts. Name the columns based on the patient barcodes (ie the row names for rna_clinical), and name the rows based on the gene id's (ie the column names for rna_gene).
+Uh oh! Looks like neither the row nor column names are very informative. Given what we did to the other data frames, add column and row names to rna_counts. Name the columns based on the patient barcodes (ie the row names for rna_clinical), and name the rows based on the gene id's (ie the row names for rna_gene).
 
 ```{r Exercise 5.8}
 
@@ -239,7 +246,7 @@ The last step in cleanup is to subset out any samples that are of a normal tissu
 
 ```
 
-Notice that there are three sample types: "Solid Tissue Normal", "Primary solid Tumor", "Additional Metastatic", and "Metastatic". For now, we are simply going to get rid of the "Solid Tissue Normal" samples, but keep this in mind for your midterm and final projects as these samples could provide you with a good control!
+Notice that there are three sample types: "Solid Tissue Normal", "Primary solid Tumor", and "Metastatic". For now, we are simply going to get rid of the "Solid Tissue Normal" samples, but keep this in mind for your midterm and final projects as these samples could provide you with a good control!
 
 Create a mask that calls "Solid Tissue Normal" FALSE, and the other two sample types TRUE.
 
@@ -261,7 +268,7 @@ You will need to apply this mask to two of our three data frames (rna_clinical, 
 ```
 
   
-Since there still is one patients who has "Not Reported" for vital status in our dataframes, we need to remove the patient's information form both rna_clinical and rna_counts. Use the is.na() function to accomplish this here:
+Since there is still one patient who has an NA value for vital status in our dataframes, we need to remove the patient's information form both rna_clinical and rna_counts. Use the is.na() function to accomplish this here:
 
 ```{r Exercise 5.12}
  
