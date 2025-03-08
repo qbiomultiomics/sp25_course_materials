@@ -1,0 +1,152 @@
+---
+title: "Intro to Epigenomics"
+author: Wade Boohar
+date: 11/03/24
+updated: 03/07/24
+---
+
+
+```{r setup}
+ knitr::opts_knit$set(root.dir = normalizePath("/home1/PATH/TO/analysis_data"))
+```
+
+Package Download and Data-cleaning
+```{r}
+if (!require("sesameData", quietly = TRUE))
+BiocManager::install("sesameData")
+
+if (!require("sesame", quietly = TRUE))
+BiocManager::install("sesame")
+
+if (!require("limma", quietly = TRUE))
+BiocManager::install("limma")
+```
+
+
+Load in all necessary packages
+```{r}
+library(TCGAbiolinks)
+library(sesame)
+library(sesameData)
+library(limma)
+```
+
+```{r}
+query <- GDCquery(project = "TCGA-BRCA",
+                  data.category = "DNA Methylation",
+                  data.type = "Methylation Beta Value",
+                  platform = "Illumina Human Methylation 450",
+                  data.format = "Dataframe")
+GDCdownload(query)
+methylation450 <- GDCprepare(query)
+```
+
+```{r}
+methylation_clinical <- as.data.frame(methylation450@colData)
+betas <- as.data.frame(methylation450@assays@data@listData)
+cpg_sites <- as.data.frame(methylation450@rowRanges@elementMetadata)
+
+column_mask <- ifelse(colnames(methylation_clinical) %in% c('treatments', 'primary_site', 'disease_type','sites_of_involvement'), F, T)
+
+methylation_clinical <- methylation_clinical[,column_mask]
+write.csv(methylation_clinical, 'brca_methylation_clinical.csv')
+
+
+site_mask <- !grepl('-', cpg_sites$gene) & !grepl(';', cpg_sites$gene) & !is.na(cpg_sites$gene) & complete.cases(betas)
+betas <- betas[site_mask,]
+cpg_sites <- cpg_sites[site_mask,]
+
+write.csv(betas, 'brca_methylation_betas.csv')
+write.csv(cpg_sites, 'brca_cpg_sites.csv')
+```
+
+```{r}
+methylation_clinical <- read.csv('brca_methylation_clinical.csv', row.names = 1)
+betas <- read.csv('brca_methylation_betas.csv', row.names = 1)
+cpg_sites <- read.csv('brca_cpg_sites.csv', row.names = 1)
+```
+
+
+(1) Naive Differential Methylation
+```{r}
+#masking out NAs
+na_mask <- !is.na(methylation_clinical$age_at_diagnosis)
+methylation_clinical <- methylation_clinical[na_mask,]
+betas_clean <- betas[,na_mask]
+
+median <- median(methylation_clinical$age_at_diagnosis)
+
+methylation_clinical$age_category <- ifelse(methylation_clinical$age_at_diagnosis >= median, "old", "young")
+
+#fitting linear models using a "target value"
+young_mask <- methylation_clinical$age_category == "young"
+
+methylation_clinical$ages <- !young_mask
+
+mval <- t(apply(betas_clean, 1, function(x) log2(x/(1-x)))) 
+#mvalue is another statistic for methylation, centered at 0 and ranges from -1 to 1
+
+design <- model.matrix(~ages, data = methylation_clinical)
+fit <- lmFit(mval, design)
+fit2 <- eBayes(fit)
+```
+
+```{r}
+#Extracting model into dataframe
+dat <- data.frame(foldchange = fit[["coefficients"]][,2], logPvalue =  -log10(p.adjust(fit2[["p.value"]][,2],method='BY')), geneName = cpg_sites$gene)
+dat$threshold <- as.factor(abs(dat$foldchange) < 1)
+
+#Visualization
+cols <- c("TRUE" = "grey", "FALSE" = "blue")
+ggplot(data=dat, aes(x=foldchange, y = logPvalue, color=threshold)) +
+  geom_point(alpha=.2, size=0.6) +
+  scale_colour_manual(values = cols) +
+  geom_vline(xintercept = 1, colour="#990000", linetype="dashed") + 
+  geom_vline(xintercept = - 1, colour="#990000", linetype="dashed") +
+  geom_hline(yintercept = 2, colour = "#990000", linetype="dashed") +
+  theme(legend.position="none") +
+  xlab("Fold Change") +
+  ylab("-log10 p value") +
+  theme_bw() +
+  theme(legend.position = "none")
+```
+
+
+(2) Direct comparison of methylation status to transcriptional activity
+
+#...INSERT DESeq2 Stuff here to generate 'results'...
+```{r}
+results
+```
+
+```{r}
+#you can also try looking at "upregulated" or "hypermethylated" !
+downregulated <- results[(results$log2FoldChange < 3), 'gene_name']
+hypomethylated <- dat[dat$foldchange < -1, 'geneName']
+interest_genes <- intersect(downregulated, hypomethylated)
+```
+
+
+(Extra) Making Boxplots
+```{r}
+GENE<-"SCTR"
+
+gene_counts_mask <- rna_genes$gene_name == GENE
+gene_betas_mask <- cpg_sites$gene == GENE
+
+rna_clinical_tumor <- rna_clinical$definition == "Primary solid Tumor"
+methylation_clinical_tumor <- methylation_clinical$definition == "Primary solid Tumor"
+
+rna_clinical_normal <- rna_clinical$definition == "Solid Tissue Normal"
+methylation_clinical_normal <- methylation_clinical$definition == "Solid Tissue Normal"
+
+rna_tumor <- as.numeric(rna_counts[gene_counts_mask, rna_clinical_tumor])
+methylation_tumor <- (betas[gene_betas_mask, methylation_clinical_tumor])
+
+rna_normal <- as.numeric(rna_counts[gene_counts_mask, rna_clinical_normal])
+methylation_normal <- (betas[gene_betas_mask, methylation_clinical_normal])
+```
+
+```{r}
+boxplot(rna_normal, rna_tumor, xlab='Group', ylab='Counts', names=c('Normal', 'Tumor'))
+```
