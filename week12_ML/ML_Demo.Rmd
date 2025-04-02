@@ -109,3 +109,44 @@ plot(1:20, error_rates, type = "b", pch = 19, col = "blue", xlab = "Number of Ne
 The error rate decreases and then suddenly goes up! What is this indicative of?
 Which k should we choose?
 
+Unsupervised Learning
+
+First, let's run differential expression analysis with DESeq2
+```{r}
+dds <- DESeqDataSetFromMatrix(countData = rna_counts, colData = rna_clinical, design = ~gender)
+dds <- DESeq(dds)
+normalized_data <- counts(dds, normalized = TRUE)
+
+# Transpose the matrix to have samples in columns and genes in rows
+expr_data <- t(normalized_data)
+expr_data_filtered <- expr_data[, apply(expr_data, 2, var) != 0]
+```
+
+```{r}
+# PCA
+pca_result <- prcomp(expr_data_filtered, scale = TRUE)
+pca_data <- as.data.frame(pca_result$x)
+
+# PCA Plot
+pca_plot <- ggplot(pca_data, aes(PC1, PC2)) +
+  geom_point(aes(color = as.factor(data$gender))) +
+  ggtitle("PCA of TCGA Data") +
+  theme_minimal()
+
+print(pca_plot)
+```
+
+UMAP
+```{r}
+# UMAP
+umap_result <- umap(expr_data_filtered)
+
+# UMAP Plot
+umap_plot <- ggplot(as.data.frame(umap_result$layout), aes(V1, V2)) +
+  geom_point(aes(color = as.factor(data$gender))) +
+  ggtitle("UMAP of TCGA Data") +
+  theme_minimal()
+
+print(umap_plot)
+```
+
