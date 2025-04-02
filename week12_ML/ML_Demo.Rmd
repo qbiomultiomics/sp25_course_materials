@@ -1,6 +1,6 @@
 ---
 title: "Machine Learning Demo"
-author: Jeanne Revilla
+author: Jeanne Revilla and Erika Li
 date: 04/02/2025
 ---
 
